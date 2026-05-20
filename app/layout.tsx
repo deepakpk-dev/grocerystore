@@ -4,14 +4,14 @@ import './globals.css';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-fraunces',
   weight: ['500'],
   display: 'swap',
 });
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
-  variable: '--font-body',
+  variable: '--font-inter',
   weight: ['400', '500', '600'],
   display: 'swap',
 });
