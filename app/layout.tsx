@@ -17,8 +17,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Manokara Stores',
-  description: 'Fresh South-Asian groceries · Stuttgart',
+  title: 'Manokara Stores · Fresh South-Asian groceries · Stuttgart',
+  description:
+    'Live stock from a Stuttgart South-Asian specialty grocer — vegetables, fruits, fish, meat, and dry goods. Updated each morning.',
 };
 
 export default function RootLayout({
@@ -28,7 +29,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body className="bg-bg text-text antialiased">{children}</body>
     </html>
   );
 }
