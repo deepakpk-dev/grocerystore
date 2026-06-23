@@ -28,7 +28,7 @@ export function ItemCard({ item, compact = false }: { item: Item; compact?: bool
       <PhotoPlaceholder seed={item.slug} aspect="card" />
       <div className="p-4">
         <div className="font-display text-h2">{item.name}</div>
-        <div className="flex justify-between items-baseline mt-2">
+        <div className="flex justify-between items-baseline gap-2 mt-2">
           <span className="text-caption text-text-muted">{item.tamil ?? ' '}</span>
           <span className="text-small font-semibold">
             €{item.price.toFixed(2)}
