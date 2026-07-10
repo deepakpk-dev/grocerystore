@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { business } from '@/lib/business';
+import { pageMetadata, webPageJsonLd } from '@/lib/metadata';
+import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { HoursTable } from '@/components/HoursTable';
@@ -6,9 +9,18 @@ import { ContactRows } from '@/components/ContactRows';
 import { TransitNotes } from '@/components/TransitNotes';
 import { PhotoPlaceholder } from '@/components/PhotoPlaceholder';
 
+export const metadata: Metadata = pageMetadata({
+  title: 'Visit — address, hours, and contact',
+  description:
+    `${business.name} at ${business.address.street}, ${business.address.postal} ` +
+    `${business.address.city} — opening hours, phone, WhatsApp, and transit directions.`,
+  path: '/visit',
+});
+
 export default function VisitPage() {
   return (
     <>
+      <JsonLd data={webPageJsonLd({ path: '/visit', name: 'Visit Manokara Stores' })} />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">

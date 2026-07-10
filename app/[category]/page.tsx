@@ -1,7 +1,16 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { categories, categoryBySlug } from '@/lib/categories';
 import { mockCatalog } from '@/lib/mock-catalog';
 import type { Category } from '@/lib/schema';
+import {
+  breadcrumbJsonLd,
+  categoryDescription,
+  categoryTitle,
+  pageMetadata,
+  webPageJsonLd,
+} from '@/lib/metadata';
+import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { Breadcrumb } from '@/components/Breadcrumb';
@@ -16,6 +25,20 @@ export function generateStaticParams() {
 
 type Params = Promise<{ category: string }>;
 
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { category } = await params;
+  const meta = categoryBySlug[category as Category];
+  if (!meta) return {};
+
+  const items = mockCatalog.filter((i) => i.category === meta.slug);
+  const inStock = items.filter((i) => i.stock === 'in-stock');
+  return pageMetadata({
+    title: categoryTitle(meta),
+    description: categoryDescription(meta, { total: items.length, inStock: inStock.length }),
+    path: `/${meta.slug}`,
+  });
+}
+
 export default async function CategoryPage({ params }: { params: Params }) {
   const { category } = await params;
   const meta = categoryBySlug[category as Category];
@@ -27,6 +50,13 @@ export default async function CategoryPage({ params }: { params: Params }) {
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: meta.display, path: `/${meta.slug}` },
+        ])}
+      />
+      <JsonLd data={webPageJsonLd({ path: `/${meta.slug}`, name: categoryTitle(meta) })} />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">

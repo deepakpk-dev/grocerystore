@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Fraunces, Inter } from 'next/font/google';
+import { SITE_URL, groceryStoreJsonLd } from '@/lib/metadata';
+import { JsonLd } from '@/components/JsonLd';
 import './globals.css';
 
 const fraunces = Fraunces({
@@ -17,7 +19,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Manokara Stores · Fresh South-Asian groceries · Stuttgart',
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'Manokara Stores · Fresh South-Asian groceries · Stuttgart',
+    template: '%s · Manokara Stores Stuttgart',
+  },
   description:
     'Live stock from a Stuttgart South-Asian specialty grocer — vegetables, fruits, fish, meat, and dry goods. Updated each morning.',
 };
@@ -29,7 +35,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body className="bg-bg text-text antialiased">{children}</body>
+      <body className="bg-bg text-text antialiased">
+        <JsonLd data={groceryStoreJsonLd()} />
+        {children}
+      </body>
     </html>
   );
 }

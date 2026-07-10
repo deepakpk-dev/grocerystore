@@ -1,7 +1,17 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { mockCatalog } from '@/lib/mock-catalog';
 import { categoryBySlug } from '@/lib/categories';
 import { itemBody } from '@/lib/copy';
+import {
+  breadcrumbJsonLd,
+  itemDescription,
+  itemTitle,
+  pageMetadata,
+  productJsonLd,
+  webPageJsonLd,
+} from '@/lib/metadata';
+import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { Breadcrumb } from '@/components/Breadcrumb';
@@ -16,6 +26,18 @@ export function generateStaticParams() {
 
 type Params = Promise<{ slug: string }>;
 
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { slug } = await params;
+  const item = mockCatalog.find((i) => i.slug === slug);
+  if (!item) return {};
+
+  return pageMetadata({
+    title: itemTitle(item),
+    description: itemDescription(item),
+    path: `/item/${item.slug}`,
+  });
+}
+
 export default async function ItemPage({ params }: { params: Params }) {
   const { slug } = await params;
   const item = mockCatalog.find((i) => i.slug === slug);
@@ -29,6 +51,15 @@ export default async function ItemPage({ params }: { params: Params }) {
 
   return (
     <>
+      <JsonLd data={productJsonLd(item)} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: cat.display, path: `/${cat.slug}` },
+          { name: item.name },
+        ])}
+      />
+      <JsonLd data={webPageJsonLd({ path: `/item/${item.slug}`, name: itemTitle(item) })} />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">
