@@ -1,7 +1,6 @@
-import type { Metadata } from 'next';
 import { categories } from '@/lib/categories';
-import { mockCatalog } from '@/lib/mock-catalog';
-import { CATALOG_UPDATED, webPageJsonLd } from '@/lib/metadata';
+import { getCatalog } from '@/lib/catalog';
+import { formatUpdatedAt, webPageJsonLd } from '@/lib/metadata';
 import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
@@ -10,23 +9,21 @@ import { CategoryTile } from '@/components/CategoryTile';
 import { VisitBlock } from '@/components/VisitBlock';
 import { PhotoPlaceholder } from '@/components/PhotoPlaceholder';
 
-export const metadata: Metadata = {
-  alternates: { canonical: '/' },
-};
-
-export default function Home() {
-  const featured = mockCatalog.filter((i) => i.featured).slice(0, 6);
-  const inStockCount = mockCatalog.filter((i) => i.stock === 'in-stock').length;
-  const updated = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/Berlin',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(CATALOG_UPDATED));
+export default async function Home() {
+  const catalog = await getCatalog();
+  const featured = catalog.items.filter((item) => item.featured).slice(0, 6);
+  const inStockCount = catalog.items.filter((item) => item.stock === 'in-stock').length;
+  const updated = formatUpdatedAt(catalog.updatedAt);
 
   return (
     <>
-      <JsonLd data={webPageJsonLd({ path: '/', name: 'Manokara Stores — fresh today' })} />
+      <JsonLd
+        data={webPageJsonLd({
+          path: '/',
+          name: 'Manokara Stores — fresh today',
+          dateModified: catalog.updatedAt,
+        })}
+      />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">
@@ -61,7 +58,7 @@ export default function Home() {
                 key={cat.slug}
                 slug={cat.slug}
                 display={cat.display}
-                count={mockCatalog.filter((i) => i.category === cat.slug).length}
+                count={catalog.items.filter((item) => item.category === cat.slug).length}
               />
             ))}
           </div>

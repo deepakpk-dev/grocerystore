@@ -1,24 +1,26 @@
 import type { MetadataRoute } from 'next';
 import { categories } from '@/lib/categories';
-import { mockCatalog } from '@/lib/mock-catalog';
-import { absoluteUrl, CATALOG_UPDATED } from '@/lib/metadata';
+import { getCatalog } from '@/lib/catalog';
+import { siteUrl } from '@/lib/metadata';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = new Date(CATALOG_UPDATED);
-  return [
-    { url: absoluteUrl('/'), lastModified, changeFrequency: 'daily', priority: 1 },
-    { url: absoluteUrl('/visit'), lastModified, changeFrequency: 'monthly', priority: 0.6 },
-    ...categories.map((cat) => ({
-      url: absoluteUrl(`/${cat.slug}`),
-      lastModified,
-      changeFrequency: 'daily' as const,
-      priority: 0.8,
-    })),
-    ...mockCatalog.map((item) => ({
-      url: absoluteUrl(`/item/${item.slug}`),
-      lastModified,
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    })),
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const catalog = await getCatalog();
+  const lastModified = new Date(catalog.updatedAt);
+  const staticPages: MetadataRoute.Sitemap = [
+    { url: siteUrl('/'), lastModified, changeFrequency: 'daily', priority: 1 },
+    { url: siteUrl('/visit'), lastModified, changeFrequency: 'monthly', priority: 0.8 },
   ];
+  const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
+    url: siteUrl(`/${category.slug}`),
+    lastModified,
+    changeFrequency: 'daily',
+    priority: 0.9,
+  }));
+  const itemPages: MetadataRoute.Sitemap = catalog.items.map((item) => ({
+    url: siteUrl(`/item/${item.slug}`),
+    lastModified,
+    changeFrequency: 'daily',
+    priority: 0.7,
+  }));
+  return [...staticPages, ...categoryPages, ...itemPages];
 }

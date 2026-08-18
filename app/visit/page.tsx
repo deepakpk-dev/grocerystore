@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { business } from '@/lib/business';
+import { getCatalog } from '@/lib/catalog';
 import { pageMetadata, webPageJsonLd } from '@/lib/metadata';
 import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
@@ -10,17 +11,22 @@ import { TransitNotes } from '@/components/TransitNotes';
 import { PhotoPlaceholder } from '@/components/PhotoPlaceholder';
 
 export const metadata: Metadata = pageMetadata({
-  title: 'Visit — address, hours, and contact',
-  description:
-    `${business.name} at ${business.address.street}, ${business.address.postal} ` +
-    `${business.address.city} — opening hours, phone, WhatsApp, and transit directions.`,
+  title: 'Visit our Stuttgart grocery store',
+  description: `Find ${business.name} in Stuttgart. See opening hours, phone, WhatsApp, Instagram, and public transport directions.`,
   path: '/visit',
 });
 
-export default function VisitPage() {
+export default async function VisitPage() {
+  const catalog = await getCatalog();
   return (
     <>
-      <JsonLd data={webPageJsonLd({ path: '/visit', name: 'Visit Manokara Stores' })} />
+      <JsonLd
+        data={webPageJsonLd({
+          path: '/visit',
+          name: 'Visit Manokara Stores',
+          dateModified: catalog.updatedAt,
+        })}
+      />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">

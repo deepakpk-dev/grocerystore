@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
-import type { CategoryMeta, Item, StockLevel } from './schema';
-import { business, type Hours } from './business';
-import { categoryBySlug } from './categories';
+import { business } from './business';
+import type { Item, StockLevel } from './schema';
 
-export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://manokara-stores.vercel.app';
+function deploymentHost(): string | undefined {
+  return process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    process.env.VERCEL_URL;
+}
 
-// Mock freshness timestamp; the live-data pipeline replaces this with the
-// actual sheet-fetch time.
-export const CATALOG_UPDATED = '2026-07-10T08:32:00+02:00';
-
-export function absoluteUrl(path: string): string {
-  return path === '/' ? SITE_URL : `${SITE_URL}${path}`;
+export function siteUrl(path = '/'): string {
+  const host = deploymentHost() ?? 'http://localhost:3000';
+  const base = host.startsWith('http') ? host : `https://${host}`;
+  return new URL(path, base.endsWith('/') ? base : `${base}/`).toString();
 }
 
 export function pageMetadata(input: {
@@ -22,88 +22,46 @@ export function pageMetadata(input: {
   return {
     title: input.title,
     description: input.description,
-    alternates: { canonical: absoluteUrl(input.path) },
+    alternates: { canonical: input.path },
     openGraph: {
       title: input.title,
       description: input.description,
-      url: absoluteUrl(input.path),
-      siteName: business.name,
-      locale: 'en_DE',
       type: 'website',
+      url: siteUrl(input.path),
+      siteName: business.name,
+      locale: 'en_GB',
     },
   };
 }
 
-const STOCK_PHRASE: Record<StockLevel, string> = {
-  'in-stock': 'in stock today',
-  low: 'low stock today',
-  'out-of-stock': 'out of stock today',
-};
+export function businessJsonLd(dateModified: string) {
+  const schemaDays = {
+    mon: 'Monday',
+    tue: 'Tuesday',
+    wed: 'Wednesday',
+    thu: 'Thursday',
+    fri: 'Friday',
+    sat: 'Saturday',
+    sun: 'Sunday',
+  } as const;
+  const openingHoursSpecification = Object.entries(business.hours)
+    .filter(
+      (entry): entry is [keyof typeof schemaDays, { open: string; close: string }] =>
+        entry[1] !== null,
+    )
+    .map(([day, hours]) => ({
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: `https://schema.org/${schemaDays[day]}`,
+      opens: hours.open,
+      closes: hours.close,
+    }));
 
-export function itemTitle(item: Item): string {
-  const tamil = item.tamil ? ` (${item.tamil})` : '';
-  return `${item.name}${tamil} — €${item.price.toFixed(2)} / ${item.unit}`;
-}
-
-export function itemDescription(item: Item): string {
-  const origin = item.origin ? `, origin ${item.origin}` : '';
-  return (
-    `${item.name} ${STOCK_PHRASE[item.stock]} at ${business.name}, Stuttgart — ` +
-    `€${item.price.toFixed(2)} per ${item.unit}${origin}. Stock updated each morning.`
-  );
-}
-
-export function categoryTitle(meta: CategoryMeta): string {
-  return `${meta.display} — today's stock`;
-}
-
-export function categoryDescription(
-  meta: CategoryMeta,
-  counts: { total: number; inStock: number },
-): string {
-  return (
-    `${meta.blurb} ${counts.inStock} of ${counts.total} items in stock today ` +
-    `at ${business.name}, Stuttgart.`
-  );
-}
-
-const DAY_NAMES: Record<keyof Hours, string> = {
-  mon: 'Monday',
-  tue: 'Tuesday',
-  wed: 'Wednesday',
-  thu: 'Thursday',
-  fri: 'Friday',
-  sat: 'Saturday',
-  sun: 'Sunday',
-};
-
-function openingHoursSpecification() {
-  const groups = new Map<string, { days: string[]; opens: string; closes: string }>();
-  for (const [day, slot] of Object.entries(business.hours) as [
-    keyof Hours,
-    { open: string; close: string } | null,
-  ][]) {
-    if (!slot) continue;
-    const key = `${slot.open}-${slot.close}`;
-    const group = groups.get(key) ?? { days: [], opens: slot.open, closes: slot.close };
-    group.days.push(DAY_NAMES[day]);
-    groups.set(key, group);
-  }
-  return [...groups.values()].map((g) => ({
-    '@type': 'OpeningHoursSpecification',
-    dayOfWeek: g.days,
-    opens: g.opens,
-    closes: g.closes,
-  }));
-}
-
-export function groceryStoreJsonLd() {
   return {
     '@context': 'https://schema.org',
-    '@type': ['GroceryStore', 'LocalBusiness'],
-    '@id': `${SITE_URL}/#store`,
+    '@type': ['LocalBusiness', 'GroceryStore'],
+    '@id': `${siteUrl()}#business`,
     name: business.name,
-    url: SITE_URL,
+    url: siteUrl(),
     telephone: business.phone,
     address: {
       '@type': 'PostalAddress',
@@ -117,8 +75,26 @@ export function groceryStoreJsonLd() {
       latitude: business.geo.lat,
       longitude: business.geo.lng,
     },
-    openingHoursSpecification: openingHoursSpecification(),
+    openingHoursSpecification,
     sameAs: [`https://instagram.com/${business.instagram}`],
+    dateModified,
+  };
+}
+
+export function breadcrumbJsonLd(
+  crumbs: ReadonlyArray<{ name: string; path: string }>,
+  dateModified: string,
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((crumb, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: crumb.name,
+      item: siteUrl(crumb.path),
+    })),
+    dateModified,
   };
 }
 
@@ -128,45 +104,44 @@ const AVAILABILITY: Record<StockLevel, string> = {
   'out-of-stock': 'https://schema.org/OutOfStock',
 };
 
-export function productJsonLd(item: Item) {
-  const url = absoluteUrl(`/item/${item.slug}`);
+export function productJsonLd(item: Item, dateModified: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: item.name,
-    ...(item.tamil ? { alternateName: item.tamil } : {}),
-    url,
-    category: categoryBySlug[item.category].display,
+    url: siteUrl(`/item/${item.slug}`),
+    ...(item.photoUrl ? { image: item.photoUrl } : {}),
+    ...(item.origin ? { description: `${item.name} from ${item.origin}.` } : {}),
+    category: item.category,
     offers: {
       '@type': 'Offer',
-      url,
       price: item.price.toFixed(2),
       priceCurrency: 'EUR',
       availability: AVAILABILITY[item.stock],
-      seller: { '@id': `${SITE_URL}/#store` },
+      url: siteUrl(`/item/${item.slug}`),
     },
+    dateModified,
   };
 }
 
-export function breadcrumbJsonLd(crumbs: { name: string; path?: string }[]) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: crumbs.map((crumb, i) => ({
-      '@type': 'ListItem',
-      position: i + 1,
-      name: crumb.name,
-      ...(crumb.path ? { item: absoluteUrl(crumb.path) } : {}),
-    })),
-  };
-}
-
-export function webPageJsonLd(input: { path: string; name: string }) {
+export function webPageJsonLd(input: {
+  path: string;
+  name: string;
+  dateModified: string;
+}) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    url: absoluteUrl(input.path),
+    url: siteUrl(input.path),
     name: input.name,
-    dateModified: CATALOG_UPDATED,
+    dateModified: input.dateModified,
   };
+}
+
+export function formatUpdatedAt(isoDate: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(isoDate));
 }
