@@ -17,6 +17,7 @@ export const metadata: Metadata = pageMetadata({
 export default function VisitPage() {
   return (
     <>
+      <JsonLd data={webPageJsonLd({ path: '/visit', name: 'Visit Manokara Stores' })} />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">
