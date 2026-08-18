@@ -2,6 +2,9 @@
   "name": "manokara-stores",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,6 +15,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
+    "@vercel/config": "^0.6.1",
     "googleapis": "^171.4.0",
     "next": "16.2.6",
     "react": "19.2.4",

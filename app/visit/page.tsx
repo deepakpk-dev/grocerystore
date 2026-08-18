@@ -1,10 +1,18 @@
+import type { Metadata } from 'next';
 import { business } from '@/lib/business';
+import { pageMetadata } from '@/lib/metadata';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { HoursTable } from '@/components/HoursTable';
 import { ContactRows } from '@/components/ContactRows';
 import { TransitNotes } from '@/components/TransitNotes';
 import { PhotoPlaceholder } from '@/components/PhotoPlaceholder';
+
+export const metadata: Metadata = pageMetadata({
+  title: 'Visit our Stuttgart grocery store',
+  description: `Find ${business.name} in Stuttgart. See opening hours, phone, WhatsApp, Instagram, and public transport directions.`,
+  path: '/visit',
+});
 
 export default function VisitPage() {
   return (

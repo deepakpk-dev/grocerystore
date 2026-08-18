@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Item } from '@/lib/schema';
-import { PhotoPlaceholder } from './PhotoPlaceholder';
+import { CatalogImage } from './CatalogImage';
 import { StockChip } from './StockChip';
 
 export function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
@@ -11,7 +11,7 @@ export function ItemCard({ item, compact = false }: { item: Item; compact?: bool
         href={`/item/${item.slug}`}
         className="block bg-surface border border-line rounded-card overflow-hidden hover:border-accent transition-colors"
       >
-        <PhotoPlaceholder seed={item.slug} aspect="square" />
+        <CatalogImage src={item.photoUrl} alt={item.name} seed={item.slug} aspect="square" />
         <div className="p-3">
           <div className="font-display text-h3 leading-tight">{item.name}</div>
           <StockChip stock={item.stock} size="sm" />
@@ -25,11 +25,10 @@ export function ItemCard({ item, compact = false }: { item: Item; compact?: bool
       href={`/item/${item.slug}`}
       className="block bg-surface border border-line rounded-card overflow-hidden hover:border-accent transition-colors"
     >
-      <PhotoPlaceholder seed={item.slug} aspect="card" />
+      <CatalogImage src={item.photoUrl} alt={item.name} seed={item.slug} aspect="card" />
       <div className="p-4">
         <div className="font-display text-h2">{item.name}</div>
-        <div className="flex justify-between items-baseline gap-2 mt-2">
-          <span className="text-caption text-text-muted">{item.tamil ?? ' '}</span>
+        <div className="mt-2">
           <span className="text-small font-semibold">
             €{item.price.toFixed(2)}
             <span className="text-caption text-text-subtle font-normal"> / {item.unit}</span>

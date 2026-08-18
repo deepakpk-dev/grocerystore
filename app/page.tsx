@@ -1,5 +1,6 @@
 import { categories } from '@/lib/categories';
-import { mockCatalog } from '@/lib/mock-catalog';
+import { getCatalog } from '@/lib/catalog';
+import { formatUpdatedAt } from '@/lib/metadata';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { ItemCard } from '@/components/ItemCard';
@@ -7,10 +8,11 @@ import { CategoryTile } from '@/components/CategoryTile';
 import { VisitBlock } from '@/components/VisitBlock';
 import { PhotoPlaceholder } from '@/components/PhotoPlaceholder';
 
-export default function Home() {
-  const featured = mockCatalog.filter((i) => i.featured).slice(0, 6);
-  const inStockCount = mockCatalog.filter((i) => i.stock === 'in-stock').length;
-  const updated = '08:32';
+export default async function Home() {
+  const catalog = await getCatalog();
+  const featured = catalog.items.filter((item) => item.featured).slice(0, 6);
+  const inStockCount = catalog.items.filter((item) => item.stock === 'in-stock').length;
+  const updated = formatUpdatedAt(catalog.updatedAt);
 
   return (
     <>
@@ -48,7 +50,7 @@ export default function Home() {
                 key={cat.slug}
                 slug={cat.slug}
                 display={cat.display}
-                count={mockCatalog.filter((i) => i.category === cat.slug).length}
+                count={catalog.items.filter((item) => item.category === cat.slug).length}
               />
             ))}
           </div>
