@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
 import { categories } from '@/lib/categories';
 import { getCatalog } from '@/lib/catalog';
-import { formatUpdatedAt } from '@/lib/metadata';
+import { formatUpdatedAt, webPageJsonLd } from '@/lib/metadata';
+import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { ItemCard } from '@/components/ItemCard';
@@ -17,7 +17,13 @@ export default async function Home() {
 
   return (
     <>
-      <JsonLd data={webPageJsonLd({ path: '/', name: 'Manokara Stores — fresh today' })} />
+      <JsonLd
+        data={webPageJsonLd({
+          path: '/',
+          name: 'Manokara Stores — fresh today',
+          dateModified: catalog.updatedAt,
+        })}
+      />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">

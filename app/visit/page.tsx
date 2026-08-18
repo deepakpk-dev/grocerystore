@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { business } from '@/lib/business';
-import { pageMetadata } from '@/lib/metadata';
+import { getCatalog } from '@/lib/catalog';
+import { pageMetadata, webPageJsonLd } from '@/lib/metadata';
+import { JsonLd } from '@/components/JsonLd';
 import { MockRibbon } from '@/components/MockRibbon';
 import { TopBar } from '@/components/TopBar';
 import { HoursTable } from '@/components/HoursTable';
@@ -14,10 +16,17 @@ export const metadata: Metadata = pageMetadata({
   path: '/visit',
 });
 
-export default function VisitPage() {
+export default async function VisitPage() {
+  const catalog = await getCatalog();
   return (
     <>
-      <JsonLd data={webPageJsonLd({ path: '/visit', name: 'Visit Manokara Stores' })} />
+      <JsonLd
+        data={webPageJsonLd({
+          path: '/visit',
+          name: 'Visit Manokara Stores',
+          dateModified: catalog.updatedAt,
+        })}
+      />
       <MockRibbon />
       <TopBar />
       <main className="px-5 md:px-8 max-w-3xl mx-auto pb-section">

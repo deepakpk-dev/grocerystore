@@ -11,24 +11,24 @@ The only daily operation the shop performs is what its staff already do: updatin
 
 ## Current status
 
-**Phase 0 — mock store.** The client has not committed yet, so the site currently runs entirely from a hardcoded 35-SKU mock catalog with placeholder photos, placeholder business details, and an amber "MOCK · sample data" ribbon. The goal of this phase is a pitchable preview URL demonstrating the full experience (edit sheet → tap refresh → site updates).
+**Phase 0 — mock store.** The client has not committed yet, so the site falls back to a hardcoded 35-SKU catalog with placeholder photos, placeholder business details, and an amber "MOCK · sample data" ribbon. When Google credentials are present, the same build reads and validates the live sheet. The remaining goal is a deployed pitch URL demonstrating the full edit sheet → refresh → update flow.
 
 | Milestone | Status |
 |---|---|
 | A — Storefront shell (pages, components, visual system, mock data) | ✅ Done (`v0.5-shell`) |
 | C — SEO layer (metadata, JSON-LD, sitemap, robots) | ✅ Done |
-| B — Live data pipeline (Google Sheets, `/api/refresh`, cron) | ⏳ Not started |
+| B — Live data pipeline (Google Sheets, `/api/refresh`, cron) | ✅ Done |
 | Vercel preview deploy | ⏳ Not started |
 
 ## Tech stack
 
-- **[Next.js 16](https://nextjs.org)** (App Router, Turbopack), TypeScript, React server components throughout — no client components
+- **[Next.js 16](https://nextjs.org)** (App Router, Turbopack), TypeScript, server-first React with one client-side opening-hours clock
 - **[Tailwind CSS 4](https://tailwindcss.com)** with design tokens defined in `lib/theme.ts` and mirrored in the `@theme` block of `app/globals.css`
 - **`next/font`** — [Fraunces](https://fonts.google.com/specimen/Fraunces) (display) + [Inter](https://fonts.google.com/specimen/Inter) (body)
 - **[Vitest](https://vitest.dev)** + React Testing Library + jsdom
 - **pnpm** as package manager
 - Deployment target: **Vercel** (Fluid Compute, `fra1` Frankfurt region for GDPR, Node 24), configured via `vercel.ts` (not `vercel.json`)
-- Planned data source: **Google Sheets API** (service account, read-only); photos in **Vercel Blob**; **Vercel Analytics** (cookieless)
+- **Google Sheets API** (service account, read-only) with mock fallback; photos in **Vercel Blob**; **Vercel Analytics** (cookieless)
 
 ## Getting started
 
@@ -48,7 +48,7 @@ pnpm lint       # ESLint
 pnpm tsc --noEmit  # type-check
 ```
 
-No environment variables are required in Phase 0. Optional flags are documented in `.env.local.example`:
+No environment variables are required for a mock build. Live-sheet and deployment settings are documented in `.env.example`:
 
 - `NEXT_PUBLIC_HIDE_MOCK_RIBBON=1` — hides the "MOCK · sample data" ribbon
 - `NEXT_PUBLIC_SITE_URL` — canonical origin used in metadata, JSON-LD, and `sitemap.xml` (defaults to `https://manokara-stores.vercel.app`)
@@ -59,11 +59,11 @@ No environment variables are required in Phase 0. Optional flags are documented 
 |---|---|
 | `/` | Homepage — hero with "Open now" indicator, "Fresh today" featured items, category tiles, visit block |
 | `/[category]` | One page per category (`/vegetables`, `/fruits`, `/fish`, `/meat`, `/dry-goods`) with anchor-link filter sections (all / in stock / featured) |
-| `/item/[slug]` | One page per SKU — price, unit, origin, Tamil name, stock chip, templated freshness copy, sibling items |
+| `/item/[slug]` | One page per SKU — price, unit, origin, stock chip, templated freshness copy, sibling items |
 | `/visit` | Address, hours table (today highlighted), phone / WhatsApp / Instagram, transit notes |
 | `/sitemap.xml` | All 42 URLs with `lastModified`, via `app/sitemap.ts` |
-| `/robots.txt` | Allows all crawlers, points at the sitemap, via `app/robots.ts` |
-| `/api/refresh` | *(planned, milestone B)* cron + token-protected manual refresh handler |
+| `/robots.txt` | Blocks mock data from indexing; allows launch data and points at the sitemap |
+| `/api/refresh` | Cron bearer-auth + token-protected manual refresh handler |
 
 Every public page is **fully static** (SSG). `pnpm build` prerenders 42 content pages: 1 homepage + 5 categories + 35 items + 1 visit page.
 
@@ -91,7 +91,7 @@ Daily Vercel Cron            Manual refresh
                              (bookmarked on shopkeeper's phone)
 ```
 
-**There is no database.** The Google Sheet *is* the database; normalized data lives only in the Next.js data cache. In Phase 0 the sheet is stood in for by `lib/mock-catalog.ts`, which milestone B replaces with a `getCatalog()` that fetches live data.
+**There is no database.** The Google Sheet *is* the database; normalized data lives only in the tagged Next.js data cache. `getCatalog()` fetches the live sheet when all credentials are configured and otherwise uses `lib/mock-catalog.ts` for the pitch build.
 
 ### Sheet schema
 
@@ -128,7 +128,9 @@ lib/
   schema.ts             # Item, Category, StockLevel, CategoryMeta types
   business.ts           # single source of truth for NAP, hours, contact, transit
   categories.ts         # category metadata (display names, blurbs)
-  mock-catalog.ts       # 35-SKU Phase-0 catalog (replaced by live fetch in milestone B)
+  sheets.ts             # Sheets API client, row normalization, Zod validation
+  catalog.ts            # tagged daily cache with credential-free mock fallback
+  mock-catalog.ts       # 35-SKU Phase-0 fallback catalog
   copy.ts               # templated item body copy from stock + featured state
   time.ts               # isOpenNow / nextOpenLabel with Europe/Berlin DST handling
   metadata.ts           # metadata + JSON-LD helpers (titles, descriptions, schema.org builders)
@@ -177,7 +179,7 @@ All tokens live in `lib/theme.ts`.
 pnpm test
 ```
 
-The suite (20 files, 68 tests) covers:
+The suite (22 files, 60 tests) covers:
 
 - **Logic with full TDD:** `lib/time.ts` (Europe/Berlin open-hours math incl. DST), `lib/copy.ts`, `lib/metadata.ts` (title/description generation, schema.org availability mapping, breadcrumb structure), mock-catalog validation (unique slugs, category counts, stock distribution)
 - **Component behavior:** `OpenNow` against fixed dates, `MockRibbon` env-flag toggle, `PhotoPlaceholder` seed determinism, `JsonLd` serialization
@@ -186,12 +188,12 @@ The suite (20 files, 68 tests) covers:
 
 ## Roadmap
 
-- **Phase 0 (now):** mock store on a Vercel preview URL for the client pitch. Remaining: live-data pipeline (milestone B — `lib/sheets.ts`, `lib/catalog.ts`, `/api/refresh`, `vercel.ts` cron) and the preview deploy.
+- **Phase 0 (now):** storefront, live-data pipeline, and SEO foundation are implemented. Remaining: real credentials/content, preview deployment, and deployed refresh/Lighthouse/Rich Results verification.
 - **Phase 1 — client onboarding:** real sheet + staff migration, real photos, real business details in `lib/business.ts`, Google Business Profile verification starts, domain purchased.
 - **Phase 2 — launch:** custom domain, sitemap submitted to Google Search Console, GBP linked, analytics enabled.
 - **Phase 3 — post-launch (explicitly not in v1):** reviews import, newsletter signup, about-the-shop page, further programmatic SEO.
 
-### Environment variables (milestone B onward)
+### Environment variables
 
 | Variable | Purpose |
 |---|---|
@@ -199,6 +201,8 @@ The suite (20 files, 68 tests) covers:
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | service account email |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | service account private key (base64-encoded in Vercel) |
 | `REFRESH_TOKEN` | shared secret for the manual refresh URL |
+| `CRON_SECRET` | bearer secret automatically sent by Vercel Cron |
+| `NEXT_PUBLIC_SITE_URL` | canonical production origin |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob (set automatically by the integration) |
 
 ## Out of scope for v1

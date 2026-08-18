@@ -124,6 +124,20 @@ export function productJsonLd(item: Item, dateModified: string) {
   };
 }
 
+export function webPageJsonLd(input: {
+  path: string;
+  name: string;
+  dateModified: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    url: siteUrl(input.path),
+    name: input.name,
+    dateModified: input.dateModified,
+  };
+}
+
 export function formatUpdatedAt(isoDate: string): string {
   return new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Europe/Berlin',
